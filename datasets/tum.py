@@ -51,9 +51,8 @@ class TUMDataset(Dataset):
                 self.image_paths += [image_path]
                 img = Image.open(image_path)
                 img = img.resize(self.img_wh, Image.LANCZOS)
-                img = self.transform(img) # (4, h, w)
-                img = img.view(4, -1).permute(1, 0) # (h*w, 4) RGBA
-                img = img[:, :3]*img[:, -1:] + (1-img[:, -1:]) # blend A to RGB
+                img = self.transform(img) # (3, h, w)
+                img = img.view(3, -1).permute(1, 0) # (h*w, 3) RGBA
                 self.all_rgbs += [img]
                 
                 rays_o, rays_d = get_rays(self.directions, c2w) # both (h*w, 3)
@@ -87,10 +86,11 @@ class TUMDataset(Dataset):
 
             img = Image.open(os.path.join(self.root_dir, f"{frame['rgb_path']}"))
             img = img.resize(self.img_wh, Image.LANCZOS)
-            img = self.transform(img) # (4, H, W)
+            img = self.transform(img) # (3, H, W)
+
             valid_mask = (img[-1]>0).flatten() # (H*W) valid color area
-            img = img.view(4, -1).permute(1, 0) # (H*W, 4) RGBA
-            img = img[:, :3]*img[:, -1:] + (1-img[:, -1:]) # blend A to RGB
+
+            img = img.view(3, -1).permute(1, 0) # (H*W, 3) RGBA
 
             rays_o, rays_d = get_rays(self.directions, c2w)
 

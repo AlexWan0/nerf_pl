@@ -7,7 +7,7 @@ def get_opts():
                         default='/home/ubuntu/data/nerf_example_data/nerf_synthetic/lego',
                         help='root directory of dataset')
     parser.add_argument('--dataset_name', type=str, default='blender',
-                        choices=['blender', 'llff'],
+                        choices=['blender', 'llff', 'tum'],
                         help='which dataset to train/val')
     parser.add_argument('--img_wh', nargs="+", type=int, default=[800, 800],
                         help='resolution (img_w, img_h) of the image')
@@ -35,7 +35,7 @@ def get_opts():
                         help='chunk size to split the input to avoid OOM')
     parser.add_argument('--num_epochs', type=int, default=16,
                         help='number of training epochs')
-    parser.add_argument('--num_gpus', type=int, default=1,
+    parser.add_argument('--num_gpus', type=int, default=0,
                         help='number of gpus')
 
     parser.add_argument('--ckpt_path', type=str, default=None,
@@ -49,7 +49,7 @@ def get_opts():
     parser.add_argument('--lr', type=float, default=5e-4,
                         help='learning rate')
     parser.add_argument('--momentum', type=float, default=0.9,
-                        help='learning rate momentum')
+                        help='learning rate momentum')  
     parser.add_argument('--weight_decay', type=float, default=0,
                         help='weight decay')
     parser.add_argument('--lr_scheduler', type=str, default='steplr',
