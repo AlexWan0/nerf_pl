@@ -10,11 +10,12 @@ from tqdm import tqdm
 from .ray_utils import *
 
 class TUMDataset(Dataset):
-    def __init__(self, root_dir, split='train', img_wh=(640, 480)):
+    def __init__(self, root_dir, split='train', img_wh=(640, 480), load_limit=100):
         self.root_dir = root_dir # dataset rootdir
         self.split = split
         self.img_wh = img_wh
         self.define_transforms()
+        self.load_limit = load_limit
 
         self.read_meta()
         self.white_back = True
@@ -42,7 +43,9 @@ class TUMDataset(Dataset):
             self.poses = []
             self.all_rays = []
             self.all_rgbs = []
-            for frame in tqdm(self.meta['frames']):
+            for i, frame in tqdm(enumerate(self.meta['frames'])):
+                if i >= self.load_limit:
+                    break
                 pose = np.array(frame['transform_matrix'])[:3, :4]
                 self.poses += [pose]
                 c2w = torch.FloatTensor(pose)
