@@ -44,26 +44,25 @@ class TUMDataset(Dataset):
             self.all_rays = []
             self.all_rgbs = []
             for i, frame in tqdm(enumerate(self.meta['frames'])):
-                if i >= self.load_limit and i % 5 == 0:
-                    break
-                pose = np.array(frame['transform_matrix'])[:3, :4]
-                self.poses += [pose]
-                c2w = torch.FloatTensor(pose)
+                if i % (len(self.meta['frames']) // self.load_limit) == 0:
+                    pose = np.array(frame['transform_matrix'])[:3, :4]
+                    self.poses += [pose]
+                    c2w = torch.FloatTensor(pose)
 
-                image_path = os.path.join(self.root_dir, f"{frame['rgb_path']}")
-                self.image_paths += [image_path]
-                img = Image.open(image_path)
-                img = img.resize(self.img_wh, Image.LANCZOS)
-                img = self.transform(img) # (3, h, w)
-                img = img.view(3, -1).permute(1, 0) # (h*w, 3) RGBA
-                self.all_rgbs += [img]
-                
-                rays_o, rays_d = get_rays(self.directions, c2w) # both (h*w, 3)
+                    image_path = os.path.join(self.root_dir, f"{frame['rgb_path']}")
+                    self.image_paths += [image_path]
+                    img = Image.open(image_path)
+                    img = img.resize(self.img_wh, Image.LANCZOS)
+                    img = self.transform(img) # (3, h, w)
+                    img = img.view(3, -1).permute(1, 0) # (h*w, 3) RGBA
+                    self.all_rgbs += [img]
+                    
+                    rays_o, rays_d = get_rays(self.directions, c2w) # both (h*w, 3)
 
-                self.all_rays += [torch.cat([rays_o, rays_d, 
-                                             self.near*torch.ones_like(rays_o[:, :1]),
-                                             self.far*torch.ones_like(rays_o[:, :1])],
-                                             1)] # (h*w, 8)
+                    self.all_rays += [torch.cat([rays_o, rays_d, 
+                                                 self.near*torch.ones_like(rays_o[:, :1]),
+                                                 self.far*torch.ones_like(rays_o[:, :1])],
+                                                 1)] # (h*w, 8)
 
             self.all_rays = torch.cat(self.all_rays, 0) # (len(self.meta['frames])*h*w, 3)
             self.all_rgbs = torch.cat(self.all_rgbs, 0) # (len(self.meta['frames])*h*w, 3)
