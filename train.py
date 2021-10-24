@@ -151,14 +151,14 @@ class NeRFSystem(LightningModule):
 if __name__ == '__main__':
     hparams = get_opts()
     system = NeRFSystem(hparams)
-    checkpoint_callback = ModelCheckpoint(filepath=os.path.join(f'ckpts/{hparams.exp_name}',
+    checkpoint_callback = ModelCheckpoint(filepath=os.path.join(f'{hparams.base_dir}/ckpts/{hparams.exp_name}',
                                                                 '{epoch:d}'),
                                           monitor='val/loss',
                                           mode='min',
                                           save_top_k=5,)
 
     logger = TestTubeLogger(
-        save_dir="logs",
+        save_dir=f"{hparams.base_dir}/logs",
         name=hparams.exp_name,
         debug=False,
         create_git_tag=False

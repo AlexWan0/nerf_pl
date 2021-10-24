@@ -75,4 +75,7 @@ def get_opts():
     parser.add_argument('--exp_name', type=str, default='exp',
                         help='experiment name')
 
+    parser.add_argument('--base_dir', type=str, default='./',
+                        help='base directory for experiment results')
+
     return parser.parse_args()
