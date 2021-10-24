@@ -44,7 +44,7 @@ class TUMDataset(Dataset):
             self.all_rays = []
             self.all_rgbs = []
             for i, frame in tqdm(enumerate(self.meta['frames'])):
-                if i >= self.load_limit:
+                if i >= self.load_limit and i % 5 == 0:
                     break
                 pose = np.array(frame['transform_matrix'])[:3, :4]
                 self.poses += [pose]
