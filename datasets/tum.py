@@ -6,28 +6,84 @@ import os
 from PIL import Image
 from torchvision import transforms as T
 from tqdm import tqdm
+from scipy.spatial.transform import Rotation
+from bisect import bisect
 
 from .ray_utils import *
 
 class TUMDataset(Dataset):
-    def __init__(self, root_dir, split='train', img_wh=(640, 480), load_limit=100):
+    def __init__(self, root_dir, split='train', img_wh=(640, 480), load_limit=100, focal=517):
         self.root_dir = root_dir # dataset rootdir
         self.split = split
         self.img_wh = img_wh
         self.define_transforms()
         self.load_limit = load_limit
 
+        self.focal = focal
+
+        self.traj_path = os.path.join(root_dir, "groundtruth.txt")
+        self.rgb_path = os.path.join(root_dir, "rgb.txt")
+        self.depth_path = os.path.join(root_dir, "depth.txt")
+
         self.read_meta()
         self.white_back = True
 
+    def parse_frames(self, path):
+        files = []
+        with open(path) as file:
+            for line in file:
+                if not line[0] == "#":
+                    spl = line.split()
+                    files.append([float(spl[0]), spl[1]])
+        return files
+
     def read_meta(self):
-        with open(os.path.join(self.root_dir,
-                               f"meta.json"), 'r') as f:
-            self.meta = json.load(f)
+        # read files
+        trajectory = []
+        with open(self.traj_path) as traj_file:
+            for line in traj_file:
+                if not line[0] == "#":
+                    trajectory.append([float(n) for n in line.split()])
+
+        trajectory = np.array(trajectory)
+
+        rgb_files = self.parse_frames(self.rgb_path)
+        depth_files = self.parse_frames(self.depth_path)
+
+        assert len(rgb_files) == len(depth_files)
+
+        # create meta
+        self.meta = {'frames': []}
+
+        for i in range(len(rgb_files)):
+            frame_data = {}
+            
+            frame_timestamp = rgb_files[i][0]
+            
+            frame_data['rgb_path'] = rgb_files[i][1]
+            frame_data['depth_path'] = depth_files[i][1]
+            
+            traj_point = trajectory[bisect([t[0] for t in trajectory], frame_timestamp)] # gets datapoint in trajectory with closest timestamp
+            traj_timestamp, tx, ty, tz, qx, qy, qz, qw = traj_point
+            
+            #print(frame_timestamp, traj_timestamp)
+            
+            c2w = np.zeros((4,4))
+            
+            r = Rotation.from_quat([qx, qy, qz, qw])
+            c2w[:3, :3] = r.as_matrix()
+            
+            c2w[0:3, 3] = np.array([tx, ty, tz])
+            
+            c2w[3, 3] = 1
+            
+            frame_data['rotation_vector'] = r.as_rotvec().tolist()
+            
+            frame_data['transform_matrix'] = c2w.tolist()
+            
+            self.meta['frames'].append(frame_data)
 
         w, h = self.img_wh
-        # scale focal length to match new image wh
-        self.focal = self.meta['fx'] # make get_ray_directions use seperate fx and fy?
 
         # bounds, common for all scenes
         self.near = 2.0
@@ -43,7 +99,7 @@ class TUMDataset(Dataset):
             self.poses = []
             self.all_rays = []
             self.all_rgbs = []
-            for i, frame in tqdm(enumerate(self.meta['frames'])):
+            for i, frame in tqdm(enumerate(self.meta['frames']), total=min(self.load_limit, len(self.meta['frames']))):
                 if i % (len(self.meta['frames']) // self.load_limit) == 0:
                     pose = np.array(frame['transform_matrix'])[:3, :4]
                     self.poses += [pose]
