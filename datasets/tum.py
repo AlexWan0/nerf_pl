@@ -21,7 +21,7 @@ class TUMDataset(Dataset):
 
         self.focal = focal
 
-        self.near, self.far = self.bounds
+        self.near, self.far = bounds
 
         self.traj_path = os.path.join(root_dir, "groundtruth.txt")
         self.rgb_path = os.path.join(root_dir, "rgb.txt")
