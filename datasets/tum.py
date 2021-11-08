@@ -12,7 +12,7 @@ from bisect import bisect
 from .ray_utils import *
 
 class TUMDataset(Dataset):
-    def __init__(self, root_dir, split='train', img_wh=(640, 480), load_limit=100, focal=517):
+    def __init__(self, root_dir, split='train', img_wh=(640, 480), load_limit=100, focal=517, bounds=(2.0, 6.0)):
         self.root_dir = root_dir # dataset rootdir
         self.split = split
         self.img_wh = img_wh
@@ -20,6 +20,8 @@ class TUMDataset(Dataset):
         self.load_limit = load_limit
 
         self.focal = focal
+
+        self.near, self.far = self.bounds
 
         self.traj_path = os.path.join(root_dir, "groundtruth.txt")
         self.rgb_path = os.path.join(root_dir, "rgb.txt")
@@ -84,11 +86,6 @@ class TUMDataset(Dataset):
             self.meta['frames'].append(frame_data)
 
         w, h = self.img_wh
-
-        # bounds, common for all scenes
-        self.near = 2.0
-        self.far = 6.0
-        self.bounds = np.array([self.near, self.far])
         
         # ray directions for all pixels, same for all images (same H, W, focal)
         self.directions = \
@@ -99,7 +96,7 @@ class TUMDataset(Dataset):
             self.poses = []
             self.all_rays = []
             self.all_rgbs = []
-            for i, frame in tqdm(enumerate(self.meta['frames']), total=min(self.load_limit, len(self.meta['frames']))):
+            for i, frame in tqdm(enumerate(self.meta['frames'])):
                 if i % (len(self.meta['frames']) // self.load_limit) == 0:
                     pose = np.array(frame['transform_matrix'])[:3, :4]
                     self.poses += [pose]

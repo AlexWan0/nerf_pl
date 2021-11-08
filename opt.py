@@ -78,4 +78,10 @@ def get_opts():
     parser.add_argument('--base_dir', type=str, default='./',
                         help='base directory for experiment results')
 
+    parser.add_argument('--bounds', nargs="+", type=float, default=[2.0, 6.0],
+                        help='near/far bounds for generating rays')
+    
+    parser.add_argument('--focal', type=int, default=517,
+                        help='focal length')
+
     return parser.parse_args()
